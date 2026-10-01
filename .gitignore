@@ -1,0 +1,27 @@
+# Virtual environment
+venv/
+env/
+virtualenv/
+
+# Python cache files
+__pycache__/
+*.pyc
+
+# IDE files
+.idea/
+*.iml
+
+# Log files
+*.log
+
+# Database files (if you use SQLite or similar)
+*.sqlite3
+*.db
+
+# Environment variables
+.env
+
+# Build artifacts and temporary files
+dist/
+build/
+*.egg-info/

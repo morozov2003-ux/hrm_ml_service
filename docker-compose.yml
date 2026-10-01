@@ -1,0 +1,74 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: postgres_db_v2
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres_password
+      POSTGRES_DB: hrm_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis_broker_v2
+    ports:
+      - "6379:6379"
+
+  web:
+    build: .
+    container_name: fastapi_web_v2
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - .:/workspace
+    ports:
+      - "8000:8000"
+    environment:
+      - POSTGRES_SERVER=db
+      - REDIS_HOST=redis
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres_password
+      - POSTGRES_DB=hrm_db
+    depends_on:
+      - db
+      - redis
+
+  celery_worker:
+    build: .
+    container_name: celery_worker_v2
+    command: celery -A worker.celery_app worker --loglevel=info
+    volumes:
+      - .:/workspace
+    environment:
+      - POSTGRES_SERVER=db
+      - REDIS_HOST=redis
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres_password
+      - POSTGRES_DB=hrm_db
+    depends_on:
+      - db
+      - redis
+
+  dashboard:
+    build: .
+    container_name: streamlit_dashboard_v2
+    command: streamlit run dashboard/app.py --server.port 8501 --server.address 0.0.0.0
+    ports:
+      - "8501:8501"
+    depends_on:
+      - web
+
+  prometheus:
+    image: prom/prometheus:v2.45.0
+    container_name: prometheus_v2
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+
+volumes:
+  postgres_data:
